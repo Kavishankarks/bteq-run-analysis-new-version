@@ -71,9 +71,9 @@ class Summary :
             target_table = dff[dff["target_table"].str.contains(selected_table,case=False)]
             metadata, parser , sqlimport = self.get_individual_table(target_table)
             st.write(target_table)
-            st.write("\t\tMetadata Error",metadata)
             st.write("\t\tParser Error",parser)
             st.write("\t\tSQL Import Error",sqlimport)
+            st.write("\t\tMetadata Error",metadata)
 
 
 
