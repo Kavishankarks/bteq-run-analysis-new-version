@@ -42,8 +42,9 @@ class Summary :
         return (self.df["import_status"] == "Failed").sum()
     
     def buildSummary(self):
-        st.write("Total SQL's : ",len(df))
+        # st.write("Total SQL's : ",len(df))
         col1, col2, col3, col4= st.columns(4)
+        col1.metric("Total SQL's : ",len(df))
         col2.metric("Parser Completed",self.get_parse_completed())
         col3.metric("SQL Import Completed",self.get_import_completed())
         col4.metric("Metadata Completed",self.get_metadata_completed())
