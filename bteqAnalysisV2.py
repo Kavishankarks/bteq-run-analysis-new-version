@@ -136,8 +136,8 @@ class Summary :
         for i in df["jcl"]:
             if i  not in unique_jcls and type(i) == str:
                 unique_jcls[i] = 1
-        st.write(unique_jcls.keys())
-        st.write(len(unique_jcls))
+        # st.write(unique_jcls.keys())
+        # st.write(len(unique_jcls))
         dff = df[df["jcl"] != None]
         dff.fillna("NA",inplace=True)
         fully_completed =0 
@@ -206,6 +206,12 @@ class preProcessData :
                 self.df = self.df.rename(columns = dict(zip(self.current_columns, self.actual_columns_next)))
             except :
                 st.exception("Column count mismatch")
+        
+        if("file_name" in self.df.columns) :
+                self.df[["jcl","control_card"]] = self.df["file_name"].str.rsplit('/',n=1,expand=True)
+                self.df.drop("file_name", axis=1, inplace=True)
+                self.df.insert(0, 'control_card', self.df.pop('control_card'))
+                self.df.insert(0, 'jcl', self.df.pop('jcl'))
         return self.df
     
     def replace_nan_with_na(self):
@@ -241,8 +247,6 @@ if select_screen == "BTEQ Run Analysis" :
         summary = Summary(df)
         summary.buildSummary()
         summary.error_display()
-        if st.button("Get All Tables Not Found"):
-            summary.get_table_not_found()
         summary.keyword_error()
         summary.search_target_table()
         s = st.checkbox("List errors")
@@ -251,6 +255,8 @@ if select_screen == "BTEQ Run Analysis" :
         if st.button("Get JCL analysis") :
             summary.get_jcl_completed(s)
         uploaded_jira_mapping = st.file_uploader("Chose Jira Mapping ")
+        if st.button("Get All Tables Not Found"):
+            summary.get_table_not_found()
         if uploaded_jira_mapping is not None :
                 df_jira = pd.read_csv(uploaded_jira_mapping)
                 # df_jira.columns = df_jira.columns.str.lower().str.replace(' ', '_')
