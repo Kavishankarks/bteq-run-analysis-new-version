@@ -2,6 +2,10 @@ import pandas as pd
 import re 
 import streamlit as st
 import numpy as np
+import pandasql as psql
+from streamlit_ace import st_ace
+# import docs
+# from docs import display_docs
 # df = pd.read_csv("edw_sql_analysis - run5.csv")
 
 
@@ -16,6 +20,12 @@ st.set_page_config(
         'About': "# Tool to analyse the BTEQ Run report "
     }
 )
+
+
+
+def render_page(page):
+    # Use the dictionary to call the function corresponding to the selected page
+    pages[page]()
 
 class Summary :
     def __init__(self,df):
@@ -230,9 +240,32 @@ class JiraMapping :
             except :
                 st.exception("Column count mismatch")
         return self.df_mapping
+def display_docs():
+    """
+    Displays documentation for your Streamlit app.
+    """
+    st.title('Documentation')
 
+    st.header('Introduction')
+    st.write('Welcome to my Streamlit app! This app allows you to ...')
+
+    st.header('Usage')
+    st.write('To use this app, simply ...')
+
+    st.header('FAQ')
+    st.write('Q: What do I do if ...')
+    st.write('A: You can ...')
+
+    st.header('Contact')
+    st.write('If you have any questions or feedback, please contact us at ...')
+
+pages = {
+    "Documentation" : display_docs
+}
 with st.sidebar:
-    select_screen = st.sidebar.selectbox("Option", ("BTEQ Run Analysis","Compare two BteqRun Reports"))
+    if st.sidebar.button('Documentation'):
+        render_page(display_docs)
+    select_screen = st.sidebar.selectbox("Option", ("BTEQ Run Analysis","Compare two BteqRun Reports","Error Level Analysis"))
 uploaded_file = st.file_uploader("Choose a file")
 
 
@@ -244,8 +277,38 @@ if select_screen == "BTEQ Run Analysis" :
         preprocess.replace_nan_with_na()
         st.title("Run report")
         st.write(df)
+        # Execute the SQL query on the DataFrame
         summary = Summary(df)
         summary.buildSummary()
+        sql_code = """
+        SELECT *
+        FROM my_table
+        WHERE column_name = 'value'
+        """
+
+        # Create the text_area with the Ace editor
+        sql_code = st_ace(
+            value=sql_code,
+            language="sql",
+            theme="chrome",
+            height=400,
+            font_size=14,
+            keybinding="vscode",
+            placeholder="Enter SQL code here...",
+        )
+
+        # Display the SQL code
+        st.write("SQL code:")
+        st.code(sql_code, language="sql")
+        # sql_query = st.text_area('Enter SQL query:')
+        if st.button("Submit"):
+            try:
+                result = psql.sqldf(sql_code)
+                # Display the results
+                st.title("SQL Query Results")
+                st.write(result)
+            except Exception as e:
+                st.write('Invalid SQL query',e)
         summary.error_display()
         summary.keyword_error()
         summary.search_target_table()
@@ -279,26 +342,40 @@ if select_screen == "BTEQ Run Analysis" :
         # st.write("sd")
 
 
-else :
-    st.write("Compare two Bteq")
-    uploaded_file_second = st.file_uploader("Choose a compare file")
-    df1 = pd.read_csv(uploaded_file)
-    if uploaded_file_second :
-        df2 = pd.read_csv(uploaded_file_second)
+elif(select_screen=="Compare two BteqRun Reports") :
+     if uploaded_file is not None:
+        st.write("Compare two Bteq")
+        uploaded_file_second = st.file_uploader("Choose a compare file")
+        df1 = pd.read_csv(uploaded_file)
+        if uploaded_file_second :
+            df2 = pd.read_csv(uploaded_file_second)
 
-        #preprocess both files
-        preprocess_df1 = preProcessData(df1)
-        df1 = preprocess_df1.updateColumnsNames()
-        preprocess_df1.replace_nan_with_na()
-        
-        preprocess_df2 = preProcessData(df2)
-        df2 = preprocess_df2.updateColumnsNames()
-        preprocess_df2.replace_nan_with_na()
+            #preprocess both files
+            preprocess_df1 = preProcessData(df1)
+            df1 = preprocess_df1.updateColumnsNames()
+            preprocess_df1.replace_nan_with_na()
+            
+            preprocess_df2 = preProcessData(df2)
+            df2 = preprocess_df2.updateColumnsNames()
+            preprocess_df2.replace_nan_with_na()
 
-        if(len(df1) == len(df2)) :
-            if df1.equals(df2):
-                st.write("The two DataFrames are identical.")
+            if(len(df1) == len(df2)) :
+                if df1.equals(df2):
+                    st.write("The two DataFrames are identical.")
+                else :
+                    st.write("Comparing the Run files")
             else :
-                st.write("Comparing the Run files")
-        else :
-            st.write("Not able to compare because of missmatch in file sizes")
+                st.write("Not able to compare because of missmatch in file sizes")
+
+elif select_screen == "Error Level Analysis" :
+     if uploaded_file is not None:
+        df = pd.read_csv(uploaded_file)
+        st.write('Original DataFrame:')
+        st.write(df.columns)
+
+        # Allow the user to edit the dataframe
+        edited_df = st.experimental_data_editor(df) # 👈 An editable dataframe
+        st.write(edited_df)
+        # favorite_command = edited_df.loc[edited_df["rating"].idxmax()]["command"]
+        # st.markdown(f"Your favorite command is **{favorite_command}** 🎈")
+        
